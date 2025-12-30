@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Data Member</title>
+    <!-- Tailwind CSS untuk Desain -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-indigo-700">Data Member</h1>
+            <p class="text-slate-500">Aplikasi Input Otomatis</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- FORM INPUT -->
+            <div class="md:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-md sticky top-4">
+                    <h2 class="text-lg font-bold mb-4 text-indigo-800"><i class="fas fa-plus-circle"></i> Input Baru</h2>
+                    
+                    <form id="memberForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700">Nama</label>
+                            <input type="text" id="nama" class="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nama Member" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700">Domisili</label>
+                            <input type="text" id="domisili" class="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Kota" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700">No WhatsApp</label>
+                            <input type="tel" id="noWa" class="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0812..." required>
+                            <p class="text-xs text-slate-400 mt-1">*Otomatis jadi format link WA</p>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded shadow transition">Simpan</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TABEL DATA -->
+            <div class="md:col-span-2">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+                        <div class="font-bold text-slate-700" id="totalMember">Total: 0</div>
+                        <button onclick="downloadCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-sm font-medium">
+                            <i class="fas fa-file-excel"></i> Download Excel
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-100 sticky top-0">
+                                <tr>
+                                    <th class="p-3 text-xs font-bold text-slate-500 uppercase">Nama</th>
+                                    <th class="p-3 text-xs font-bold text-slate-500 uppercase">Domisili</th>
+                                    <th class="p-3 text-xs font-bold text-slate-500 uppercase">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memberList" class="divide-y divide-slate-100">
+                                <!-- Data akan masuk sini -->
+                            </tbody>
+                        </table>
+                        <div id="emptyState" class="p-8 text-center text-slate-400 hidden">
+                            <i class="fas fa-users text-4xl mb-2"></i>
+                            <p>Belum ada data.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Ambil data dari LocalStorage saat load
+        let members = JSON.parse(localStorage.getItem('simpleMemberData')) || [];
+        
+        const form = document.getElementById('memberForm');
+        const list = document.getElementById('memberList');
+        const emptyState = document.getElementById('emptyState');
+        const totalLabel = document.getElementById('totalMember');
+
+        // Render pertama kali
+        renderMembers();
+
+        // Handle Submit
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const nama = document.getElementById('nama').value;
+            const domisili = document.getElementById('domisili').value;
+            let noWa = document.getElementById('noWa').value.replace(/\D/g, ''); // Hapus non-angka
+
+            // Format WA 08 -> 628
+            if (noWa.startsWith('0')) noWa = '62' + noWa.slice(1);
+
+            const newMember = {
+                id: Date.now(),
+                nama,
+                domisili,
+                noWa,
+                date: new Date().toLocaleDateString('id-ID')
+            };
+
+            members.unshift(newMember); // Tambah ke paling atas
+            saveAndRender();
+            form.reset();
+        });
+
+        // Hapus Member
+        function deleteMember(id) {
+            if(confirm('Hapus data ini?')) {
+                members = members.filter(m => m.id !== id);
+                saveAndRender();
+            }
+        }
+
+        // Simpan ke Browser & Tampilkan
+        function saveAndRender() {
+            localStorage.setItem('simpleMemberData', JSON.stringify(members));
+            renderMembers();
+        }
+
+        // Render Tampilan
+        function renderMembers() {
+            list.innerHTML = '';
+            totalLabel.innerText = `Total: ${members.length} Member`;
+
+            if (members.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                members.forEach(m => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition';
+                    tr.innerHTML = `
+                        <td class="p-3">
+                            <div class="font-bold text-slate-800">${m.nama}</div>
+                            <div class="text-xs text-slate-400">${m.date}</div>
+                        </td>
+                        <td class="p-3">
+                            <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">${m.domisili}</span>
+                        </td>
+                        <td class="p-3 flex gap-2">
+                            <a href="https://wa.me/${m.noWa}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm shadow"><i class="fab fa-whatsapp"></i> Chat</a>
+                            <button onclick="deleteMember(${m.id})" class="bg-red-100 hover:bg-red-200 text-red-600 p-2 rounded text-sm"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    list.appendChild(tr);
+                });
+            }
+        }
+
+        // Download Excel/CSV
+        function downloadCSV() {
+            if(members.length === 0) return alert('Data kosong!');
+            
+            let csvContent = "data:text/csv;charset=utf-8,Nama,Domisili,No WhatsApp,Tanggal Join\n";
+            members.forEach(m => {
+                csvContent += `"${m.nama}","${m.domisili}","'${m.noWa}","${m.date}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Data_Member.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
